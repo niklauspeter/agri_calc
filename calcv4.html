@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Avocado Investment Calculator</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #e6ffe6, #f0f5ff);
+      color: #333;
+    }
+
+    header {
+      background-color: #4caf50;
+      color: white;
+      padding: 1rem 2rem;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    main {
+      display: flex;
+      justify-content: space-between;
+      padding: 2rem;
+      gap: 2rem;
+    }
+
+    .form-section {
+      flex: 1;
+      background: #ffffff;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    .form-section h2 {
+      color: #4caf50;
+    }
+
+    label {
+      display: block;
+      margin: 1rem 0 0.5rem;
+      font-weight: 600;
+    }
+
+    input[type="range"], select {
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+
+    .slider-value {
+      font-size: 0.9rem;
+      color: #666;
+      text-align: right;
+      margin-bottom: 1rem;
+    }
+
+    .radio-group {
+      margin-top: 0.5rem;
+    }
+
+    .radio-group label {
+      font-weight: normal;
+      margin-right: 1rem;
+    }
+
+    .output-section {
+      flex: 0.8;
+      background: #f8f8f8;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    .output-section h3 {
+      color: #6a1b9a;
+      margin-bottom: 1rem;
+    }
+
+    .output-section p {
+      margin: 0.5rem 0;
+      font-size: 1rem;
+    }
+
+    .highlight {
+      font-weight: bold;
+      color: #388e3c;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      background-color: #f1f1f1;
+      color: #888;
+      font-size: 0.9rem;
+    }
+
+    .scenario-group {
+      background-color: #e8f5e9;
+      padding: 1rem;
+      border-left: 5px solid #4caf50;
+      margin-bottom: 2rem;
+      border-radius: 0.5rem;
+    }
+
+    .scenario-group h4 {
+      margin-top: 0;
+      color: #2e7d32;
+    }
+
+    @media (max-width: 768px) {
+      main {
+        flex-direction: column;
+      }
+      .form-section, .output-section {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Avocado Farm Investment Calculator</h1>
+  </header>
+
+  <main>
+    <div class="form-section">
+      <h2>Customize Investment</h2>
+
+      <label for="farmSize">Farm Size (Acres)</label>
+      <input type="range" id="farmSize" min="1" max="100" value="10" />
+      <div class="slider-value">Selected: <span id="farmSizeValue">10</span> acres</div>
+
+      <label for="years">Years of Investment</label>
+      <input type="range" id="years" min="1" max="15" value="10" />
+      <div class="slider-value">Selected: <span id="yearsValue">10</span> years</div>
+
+      <label>Scenario</label>
+      <div class="radio-group">
+        <label><input type="radio" name="scenario" value="worst" /> Worst Case</label>
+        <label><input type="radio" name="scenario" value="medium" checked /> Medium Case</label>
+        <label><input type="radio" name="scenario" value="best" /> Best Case</label>
+      </div>
+    </div>
+
+    <div class="output-section">
+      <h3>Investment Summary</h3>
+
+      <div class="scenario-group">
+        <h4>Scenario Details</h4>
+        <p><strong>Mature Tree Yield:</strong> <span id="scenario-yield">--</span> fruits/tree/year</p>
+        <p><strong>Price per Fruit:</strong> <span id="scenario-price">--</span> USD</p>
+      </div>
+
+      <p><strong>Initial Investment:</strong> <span id="cost">$--</span></p>
+      <p><strong>Grand Total Revenue:</strong> <span id="revenue">$--</span></p>
+      <p><strong>Investor Share:</strong> <span id="investor">$--</span></p>
+      <p><strong>Farmer Share:</strong> <span id="farmer">$--</span></p>
+      <p><strong>Company Share:</strong> <span id="company">$--</span></p>
+      <p><strong>Total Yield:</strong> <span id="yield">-- tons</span></p>
+    </div>
+  </main>
+
+  <footer>
+    &copy; 2025 Avocado Ventures. All rights reserved.
+  </footer>
+
+  <script>
+    const farmSizeInput = document.getElementById("farmSize");
+    const yearsInput = document.getElementById("years");
+    const scenarioRadios = document.getElementsByName("scenario");
+
+    const costOutput = document.getElementById("cost");
+    const revenueOutput = document.getElementById("revenue");
+    const investorOutput = document.getElementById("investor");
+    const farmerOutput = document.getElementById("farmer");
+    const companyOutput = document.getElementById("company");
+    const yieldOutput = document.getElementById("yield");
+
+    const scenarioYieldOutput = document.getElementById("scenario-yield");
+    const scenarioPriceOutput = document.getElementById("scenario-price");
+
+    const farmSizeValue = document.getElementById("farmSizeValue");
+    const yearsValue = document.getElementById("yearsValue");
+
+    const worstCaseYields = Array(15).fill().map((_, i) => (i < 2 ? 0 : i < 4 ? 2 : i < 6 ? 5 : 10));
+    const mediumCaseYields = Array(15).fill().map((_, i) => (i < 2 ? 0 : i < 4 ? 3 : i < 6 ? 7 : 12));
+    const bestCaseYields = Array(15).fill().map((_, i) => (i < 2 ? 0 : i < 4 ? 4 : i < 6 ? 9 : 15));
+
+    const scenarioYields = {
+      worst: Math.round(worstCaseYields[9]),
+      medium: Math.round(mediumCaseYields[9]),
+      best: Math.round(bestCaseYields[9])
+    };
+
+    const scenarioPrices = {
+      worst: 0.15,
+      medium: 0.25,
+      best: 0.35
+    };
+
+    function getSelectedScenario() {
+      for (const radio of scenarioRadios) {
+        if (radio.checked) return radio.value;
+      }
+      return "medium";
+    }
+
+    function renderResults() {
+      const size = parseInt(farmSizeInput.value);
+      const years = parseInt(yearsInput.value);
+      const scenario = getSelectedScenario();
+
+      const treesPerAcre = 100;
+      const costPerTree = 5;
+      const totalTrees = size * treesPerAcre;
+      const totalCost = totalTrees * costPerTree;
+
+      let yields;
+      switch (scenario) {
+        case "worst":
+          yields = worstCaseYields;
+          break;
+        case "medium":
+          yields = mediumCaseYields;
+          break;
+        case "best":
+          yields = bestCaseYields;
+          break;
+      }
+
+      const price = scenarioPrices[scenario];
+      let totalFruits = 0;
+
+      for (let i = 0; i < years && i < yields.length; i++) {
+        totalFruits += yields[i] * totalTrees;
+      }
+
+      const totalRevenue = totalFruits * price;
+      const totalTons = totalFruits / 2000;
+
+      const investor = totalRevenue * 0.45;
+      const farmer = totalRevenue * 0.40;
+      const company = totalRevenue * 0.15;
+
+      costOutput.innerText = `$${totalCost.toLocaleString()}`;
+      revenueOutput.innerText = `$${totalRevenue.toLocaleString()}`;
+      investorOutput.innerText = `$${investor.toLocaleString()}`;
+      farmerOutput.innerText = `$${farmer.toLocaleString()}`;
+      companyOutput.innerText = `$${company.toLocaleString()}`;
+      yieldOutput.innerText = `${totalTons.toFixed(2)} tons`;
+
+      scenarioYieldOutput.innerText = `${scenarioYields[scenario]}`;
+      scenarioPriceOutput.innerText = `$${price.toFixed(2)}`;
+    }
+
+    farmSizeInput.addEventListener("input", () => {
+      farmSizeValue.innerText = farmSizeInput.value;
+      renderResults();
+    });
+
+    yearsInput.addEventListener("input", () => {
+      yearsValue.innerText = yearsInput.value;
+      renderResults();
+    });
+
+    scenarioRadios.forEach(radio => {
+      radio.addEventListener("change", renderResults);
+    });
+
+    // Initial render
+    renderResults();
+  </script>
+</body>
+</html>

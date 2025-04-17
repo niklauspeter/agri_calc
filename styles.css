@@ -1,0 +1,26 @@
+/*!
+Theme Name: Agrion Child theme
+Theme URI: https://bracketweb.com/agrionwp/
+Template: agrion
+Author: Bracket Web
+Author URI: https://themeforest.net/user/bracket-web
+Description: This is a Child theme for Agrion WordPress theme.
+Version: 1.0
+License: GNU General Public License v2 or later
+License URI: LICENSE
+Text Domain: agrion-child
+*/
+#investment-calculator {
+    max-width: 400px;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    text-align: center;
+}
+
+#investment-calculator input, #investment-calculator select, #investment-calculator button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+}

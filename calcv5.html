@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Avocado Investment Calculator</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #e6ffe6, #ccffcc);
+      background-image: url('https://images.unsplash.com/photo-1584447121279-93d8e0d83878');
+      background-size: cover;
+      background-position: center;
+      color: #2e7d32;
+      margin: 0;
+      padding: 2rem;
+    }
+    .container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    background-color: rgba(255, 255, 255, 0.85);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    max-width: 1100px;
+    margin: auto;
+    flex-wrap: nowrap; /* ensure row stays horizontal */
+    }
+
+    .form-section {
+    flex: 1 1 50%;
+    order: 1; /* Input first */
+    margin-right: 2rem;
+    }
+
+    .summary-section {
+    flex: 1 1 50%;
+    order: 2; /* Output second */
+    margin-left: 2rem;
+    }
+
+    /* .container {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      background-color: rgba(255, 255, 255, 0.85);
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 1100px;
+      margin: auto;
+      flex-wrap: wrap;
+    }
+    .form-section, .summary-section {
+      flex: 1 1 48%;
+      margin: 1rem; */
+    }
+    h2 {
+      margin-top: 0;
+      color: #33691e;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 1rem;
+    }
+    input[type="range"] {
+      width: 100%;
+    }
+    .radio-group {
+      margin-top: 1rem;
+    }
+    .radio-group input {
+      margin-right: 0.5rem;
+    }
+    .summary {
+      background: #f1f8e9;
+      padding: 1rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+    }
+    #chart-container {
+      width: 100%;
+      margin-top: 2rem;
+      display: none;
+    }
+    .toggle-chart {
+      margin-top: 1rem;
+      background: #a5d6a7;
+      border: none;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      border-radius: 8px;
+      color: #1b5e20;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="summary-section">
+    <h2>Investment Summary</h2>
+    <div class="summary">
+      <p><strong>Estimated Revenue:</strong> $<span id="revenue">--</span></p>
+      <p><strong>Estimated Profit:</strong> $<span id="profit">--</span></p>
+      <p><strong>Mature Tree Yield:</strong> <span id="scenario-yield">--</span> fruits/tree</p>
+      <p><strong>Price per Fruit:</strong> $<span id="scenario-price">--</span></p>
+    </div>
+    <button class="toggle-chart" onclick="toggleChart()">Toggle Revenue Chart</button>
+  </div>
+
+  <div class="form-section">
+    <h2>Investment Input</h2>
+    <label for="farmSize">Farm Size (acres): <span id="farmSizeValue">1</span></label>
+    <input type="range" id="farmSize" min="1" max="100" value="1">
+
+    <label for="years">Investment Duration (years): <span id="yearsValue">1</span></label>
+    <input type="range" id="years" min="1" max="15" value="1">
+
+    <label>Scenario:</label>
+    <div class="radio-group">
+      <label><input type="radio" name="scenario" value="worst" checked> Worst Case</label>
+      <label><input type="radio" name="scenario" value="medium"> Medium Case</label>
+      <label><input type="radio" name="scenario" value="best"> Best Case</label>
+    </div>
+  </div>
+</div>
+
+<div id="chart-container">
+  <canvas id="revenueChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const farmSizeSlider = document.getElementById('farmSize');
+  const yearsSlider = document.getElementById('years');
+  const scenarioRadios = document.getElementsByName('scenario');
+
+  const farmSizeValue = document.getElementById('farmSizeValue');
+  const yearsValue = document.getElementById('yearsValue');
+
+  const revenueEl = document.getElementById('revenue');
+  const profitEl = document.getElementById('profit');
+  const yieldEl = document.getElementById('scenario-yield');
+  const priceEl = document.getElementById('scenario-price');
+
+  const yieldData = {
+    worst: 10,
+    medium: 12,
+    best: 15
+  };
+  const pricePerFruit = {
+    worst: 0.3,
+    medium: 0.5,
+    best: 0.7
+  };
+
+  function calculate() {
+    const farmSize = +farmSizeSlider.value;
+    const years = +yearsSlider.value;
+    const selectedScenario = [...scenarioRadios].find(r => r.checked).value;
+
+    const treesPerAcre = 100;
+    const totalTrees = farmSize * treesPerAcre;
+    const yieldPerTree = yieldData[selectedScenario];
+    const price = pricePerFruit[selectedScenario];
+
+    const revenue = totalTrees * yieldPerTree * price * years;
+    const profit = revenue * 0.65; // 65% assumed margin
+
+    revenueEl.textContent = revenue.toFixed(2);
+    profitEl.textContent = profit.toFixed(2);
+    yieldEl.textContent = yieldPerTree;
+    priceEl.textContent = price.toFixed(2);
+
+    farmSizeValue.textContent = farmSize;
+    yearsValue.textContent = years;
+
+    updateChart(selectedScenario);
+  }
+
+  farmSizeSlider.addEventListener('input', calculate);
+  yearsSlider.addEventListener('input', calculate);
+  scenarioRadios.forEach(r => r.addEventListener('change', calculate));
+
+  // Chart data
+  const yearsLabels = [...Array(15)].map((_, i) => i + 1);
+  const chartData = {
+    worst: [0, 0, 2, 2, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10],
+    medium: [0, 0, 3, 3, 7, 7, 12, 12, 12, 12, 12, 12, 12, 12, 12],
+    best: [0, 0, 4, 4, 9, 9, 15, 15, 15, 15, 15, 15, 15, 15, 15]
+  };
+
+  let chartInstance = null;
+  function updateChart(scenario) {
+    const farmSize = +farmSizeSlider.value;
+    const treesPerAcre = 100;
+    const price = pricePerFruit[scenario];
+    const yields = chartData[scenario].map(yieldVal => yieldVal * treesPerAcre * farmSize * price);
+
+    if (chartInstance) {
+      chartInstance.data.datasets[0].data = yields;
+      chartInstance.update();
+    }
+  }
+
+  function toggleChart() {
+    const container = document.getElementById('chart-container');
+    container.style.display = container.style.display === 'none' ? 'block' : 'none';
+
+    if (!chartInstance && container.style.display === 'block') {
+      const ctx = document.getElementById('revenueChart').getContext('2d');
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: yearsLabels,
+          datasets: [{
+            label: 'Projected Revenue ($)',
+            data: [],
+            fill: true,
+            backgroundColor: 'rgba(102, 187, 106, 0.2)',
+            borderColor: '#43a047',
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+      calculate(); // Trigger first update
+    }
+  }
+
+  calculate(); // Initial calculation
+</script>
+
+</body>
+</html>

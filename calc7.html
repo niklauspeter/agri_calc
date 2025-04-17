@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Avocado Investment Calculator</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #e6ffe6, #ccffcc);
+      background-image: url('https://images.unsplash.com/photo-1584447121279-93d8e0d83878');
+      background-size: cover;
+      background-position: center;
+      color: #2e7d32;
+      margin: 0;
+      padding: 2rem;
+    }
+    .container {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      background-color: rgba(255, 255, 255, 0.85);
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 1100px;
+      margin: auto;
+      flex-wrap: nowrap;
+    }
+    .form-section {
+      flex: 1 1 50%;
+      order: 1;
+      margin-right: 2rem;
+    }
+    .summary-section {
+      flex: 1 1 50%;
+      order: 2;
+      margin-left: 2rem;
+    }
+    h2 {
+      margin-top: 0;
+      color: #33691e;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 1rem;
+    }
+    input[type="range"] {
+      width: 100%;
+    }
+    .radio-group {
+      margin-top: 1rem;
+    }
+    .radio-group input {
+      margin-right: 0.5rem;
+    }
+    .summary {
+      background: #f1f8e9;
+      padding: 1rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+    }
+    #chart-container {
+      width: 100%;
+      margin-top: 2rem;
+      display: none;
+    }
+    .toggle-chart {
+      margin-top: 1rem;
+      background: #a5d6a7;
+      border: none;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      border-radius: 8px;
+      color: #1b5e20;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="summary-section">
+    <h2>Investment Summary</h2>
+    <div class="summary">
+      <p><strong>Investment:</strong> $<span id="investment">--</span></p>
+      <p><strong>Estimated Revenue:</strong> $<span id="revenue">--</span></p>
+      <p><strong>Estimated Profit:</strong> $<span id="profit">--</span></p>
+      <p><strong>Return/Year:</strong> $<span id="returnPerYear">--</span></p>
+      <p><strong>Revenue by Trees Invested:</strong> $<span id="revenueByTrees">--</span></p>
+      <p><strong>Mature Tree Yield (fruits per tree):</strong> <span id="scenario-yield">--</span></p>
+      <p><strong>Price per Fruit:</strong> $<span id="scenario-price">0.25</span></p>
+      <p><strong>Carbon Sequestered:</strong> (tonnes) <span id="carbon-sequestered">--</span></p>
+    </div>
+    <button class="toggle-chart" onclick="toggleChart()">Toggle Revenue Chart</button>
+  </div>
+
+  <div class="form-section">
+    <h2>Investment Input</h2>
+    <label for="farmSize">Farm Size (acres): <span id="farmSizeValue">1</span></label>
+    <input type="range" id="farmSize" min="1" max="100" value="1">
+
+    <label for="treesInvested">Trees Invested: <span id="treesInvestedValue">1</span></label>
+    <input type="range" id="treesInvested" min="1" max="1000" value="1">
+
+    <p><strong>Money Invested:</strong> $<span id="moneyInvested">50</span></p>
+
+    <label for="years">Investment Duration (years): <span id="yearsValue">10</span></label>
+    <input type="range" id="years" min="10" max="10" value="10" disabled>
+
+    <label>Scenario:</label>
+    <div class="radio-group">
+      <label><input type="radio" name="scenario" value="worst" checked> Worst Case</label>
+      <label><input type="radio" name="scenario" value="medium"> Medium Case</label>
+      <label><input type="radio" name="scenario" value="best"> Best Case</label>
+    </div>
+  </div>
+</div>
+
+<div id="chart-container">
+  <canvas id="revenueChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const farmSizeSlider = document.getElementById('farmSize');
+  const treesInvestedSlider = document.getElementById('treesInvested');
+  const yearsSlider = document.getElementById('years');
+  const scenarioRadios = document.getElementsByName('scenario');
+
+  const farmSizeValue = document.getElementById('farmSizeValue');
+  const treesInvestedValue = document.getElementById('treesInvestedValue');
+  const yearsValue = document.getElementById('yearsValue');
+  const moneyInvestedEl = document.getElementById('moneyInvested');
+
+  const revenueEl = document.getElementById('revenue');
+  const profitEl = document.getElementById('profit');
+  const returnPerYearEl = document.getElementById('returnPerYear');
+  const revenueByTreesEl = document.getElementById('revenueByTrees');
+  const yieldEl = document.getElementById('scenario-yield');
+  const priceEl = document.getElementById('scenario-price');
+  const investmentEl = document.getElementById('investment');
+
+  const defaultOptions = { fertilization: 589.68, OrchardEstablishment: 1200.00, CropManagement: 569.04 };
+  const treesPerAcre = 120 * 0.9;
+
+  const mediumCaseYields = [0, 0, 20, 50, 100, 200, 250, 300, 400, 500];
+  const worstCaseYields = mediumCaseYields.map(y => Math.round(y * 0.7));
+  const bestCaseYields = mediumCaseYields.map(y => Math.round(y * 1.5));
+
+  const sequestrationRates = {
+    worst: 260 * 0.5, // 50% of 260 tonnes
+    medium: 260 * 0.75, // 75% of 260 tonnes
+    best: 260 // 100% of 260 tonnes
+  };
+
+  // Default values for sliders
+  farmSizeSlider.value = 0;
+  treesInvestedSlider.value = 0;
+
+  // Track the last slider interacted with
+  let lastSlider = 'farmSize'; // Default to 'farmSize'
+
+  // Add event listeners to track slider interactions
+  farmSizeSlider.addEventListener('input', () => {
+    lastSlider = 'farmSize';
+    calculate();
+  });
+
+  treesInvestedSlider.addEventListener('input', () => {
+    lastSlider = 'treesInvested';
+    calculate();
+  });
+
+  function calculate() {
+    const farmSize = +farmSizeSlider.value;
+    const treesInvested = +treesInvestedSlider.value;
+    const years = 10; // Fixed to 10 years
+    const scenario = [...scenarioRadios].find(r => r.checked).value;
+
+    // Adjust fruitPrice based on the selected scenario
+    let fruitPrice;
+    if (scenario === 'worst') {
+      fruitPrice = 0.2;
+    } else if (scenario === 'medium') {
+      fruitPrice = 0.25;
+    } else if (scenario === 'best') {
+      fruitPrice = 0.3;
+    }
+
+    farmSizeValue.textContent = farmSize;
+    treesInvestedValue.textContent = treesInvested;
+    yearsValue.textContent = years;
+    priceEl.textContent = fruitPrice.toFixed(2); // Update the price in the UI
+
+    const yieldsMap = {
+      worst: worstCaseYields,
+      medium: mediumCaseYields,
+      best: bestCaseYields
+    };
+    const yieldArray = yieldsMap[scenario];
+
+    let initialCost;
+    let fertilization;
+
+    if (lastSlider === 'treesInvested') {
+      // Adjust calculations for treesInvested
+      initialCost = Object.values(defaultOptions).reduce((a, b) => a + b, 0) / treesPerAcre * treesInvested;
+      fertilization = 546.00 / treesPerAcre * treesInvested;
+    } else {
+      // Default calculations for farmSize
+      initialCost = Object.values(defaultOptions).reduce((a, b) => a + b, 0) * farmSize;
+      fertilization = 546.00;
+    }
+
+    let yearlyCosts = [initialCost];
+
+    for (let year = 2; year <= 10; year++) {
+      fertilization *= 1.05;
+      yearlyCosts.push(Math.round(fertilization, 2));
+    }
+
+    let totalRevenue = 0;
+    let yearlyRevenue = [];
+
+    // Determine which slider to use for revenue calculation
+    for (let year = 1; year <= years; year++) {
+      const yieldPerTree = yieldArray[year - 1] || 0;
+      let revenue;
+
+      if (lastSlider === 'treesInvested') {
+        revenue = treesInvested * yieldPerTree * fruitPrice; // Use treesInvested
+      } else {
+        revenue = farmSize * treesPerAcre * yieldPerTree * fruitPrice; // Use farmSize
+      }
+
+      yearlyRevenue.push(revenue);
+      totalRevenue += revenue;
+    }
+
+    const totalCost = yearlyCosts.slice(0, years).reduce((a, b) => a + b, 0);
+    const totalProfit = totalRevenue - totalCost;
+
+    // Carbon sequestration calculation
+    let totalSequestrationRate;
+    if (lastSlider === 'treesInvested') {
+      totalSequestrationRate = sequestrationRates[scenario] / treesPerAcre * treesInvested;
+      const totalCarbonSequestered = totalSequestrationRate * years;
+      document.getElementById('carbon-sequestered').textContent = totalCarbonSequestered.toFixed(2);
+    } else {
+      totalSequestrationRate = sequestrationRates[scenario];
+      const totalCarbonSequestered = farmSize * years * totalSequestrationRate;
+      document.getElementById('carbon-sequestered').textContent = totalCarbonSequestered.toFixed(2);
+    }
+
+    // Revenue by Trees Invested
+    const yieldPerTree = yieldArray[years - 1] || 0;
+    const revenueByTreesInvested = treesInvested * yieldPerTree * fruitPrice;
+
+    // Update UI
+    moneyInvestedEl.textContent = (treesInvested * 50).toFixed(2);
+    revenueEl.textContent = totalRevenue.toFixed(2);
+    profitEl.textContent = totalProfit.toFixed(2);
+    returnPerYearEl.textContent = (totalProfit / 10).toFixed(2);
+    revenueByTreesEl.textContent = revenueByTreesInvested.toFixed(2);
+    yieldEl.textContent = yieldPerTree;
+    investmentEl.textContent = initialCost.toFixed(2);
+
+    updateChart(yearlyRevenue);
+  }
+
+  let chartInstance = null;
+  function updateChart(revenueData) {
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    const labels = [...Array(revenueData.length)].map((_, i) => `Year ${i + 1}`);
+
+    if (!chartInstance) {
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Projected Revenue ($)',
+            data: revenueData,
+            fill: true,
+            backgroundColor: 'rgba(102, 187, 106, 0.2)',
+            borderColor: '#43a047',
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    } else {
+      chartInstance.data.labels = labels;
+      chartInstance.data.datasets[0].data = revenueData;
+      chartInstance.update();
+    }
+  }
+
+  function toggleChart() {
+    const container = document.getElementById('chart-container');
+    container.style.display = container.style.display === 'none' ? 'block' : 'none';
+    if (container.style.display === 'block') calculate();
+  }
+
+  // Initial calculation
+  calculate();
+  scenarioRadios.forEach(r => r.addEventListener('change', calculate));
+</script>
+
+</body>
+</html>

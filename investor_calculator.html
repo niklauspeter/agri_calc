@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Avocado Farm Investment Calculator</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: url('https://images.unsplash.com/photo-1590502593747-34f1e51b199b?auto=format&fit=crop&w=1950&q=80') no-repeat center center fixed;
+      background-size: cover;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+
+    .calculator-wrapper {
+      max-width: 600px;
+      margin: 40px auto;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 15px;
+      box-shadow: 0 4px 20px rgba(0, 128, 0, 0.3);
+      padding: 30px;
+    }
+
+    h2, h4 {
+      text-align: center;
+      color: #4A148C; /* purple */
+    }
+
+    label, strong {
+      display: block;
+      margin-top: 15px;
+      font-weight: 600;
+    }
+
+    select, input[type=range], button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #388E3C;
+      color: white;
+      border: none;
+      margin-top: 20px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #2E7D32;
+    }
+
+    .output-values {
+      background-color: #E8F5E9;
+      border: 1px solid #C8E6C9;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 10px;
+    }
+
+    .output-values p {
+      margin: 8px 0;
+      color: #1B5E20;
+    }
+
+    .range-label {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    #yearsLabel {
+      text-align: center;
+      font-size: 18px;
+      margin-top: 5px;
+      color: #6A1B9A;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="calculator-wrapper">
+    <h2>Avocado Farm ROI Calculator</h2>
+
+    <label for="scenario">Pick a Scenario:</label>
+    <select id="scenario">
+      <option value="worst">Worst Case</option>
+      <option value="medium" selected>Average Case</option>
+      <option value="best">Best Case</option>
+    </select>
+
+    <label for="sizeAcre">Farm Size (Acres):</label>
+    <input type="range" id="sizeAcre" min="1" max="50" step="1" value="1" oninput="document.getElementById('acreOutput').innerText = this.value">
+    <div class="range-label">
+      <span>1</span>
+      <span>50</span>
+    </div>
+    <p><strong>Acreage Selected:</strong> <span id="acreOutput">1</span> acres</p>
+
+    <label for="yearsSlider">Years of Investment:</label>
+    <input type="range" id="yearsSlider" min="1" max="10" value="1" oninput="document.getElementById('yearsLabel').innerText = this.value">
+    <div class="range-label">
+      <span>1</span>
+      <span>10</span>
+    </div>
+    <p><strong>Years Selected:</strong> <span id="yearsLabel">1</span> years</p>
+
+    <button onclick="renderResults()">Calculate</button>
+
+    <div class="output-values" id="results">
+      <h4>Investment Summary</h4>
+      <p><strong>Initial Investment:</strong> $--</p>
+      <p><strong>Grand Total Revenue:</strong> $--</p>
+      <p><strong>Investor Share:</strong> $--</p>
+      <p><strong>Farmer Share:</strong> $--</p>
+      <p><strong>Company Share:</strong> $--</p>
+      <p><strong>Total Yield:</strong> -- tons</p>
+    </div>
+  </div>
+
+  <script>
+    const defaultOptions = { fertilization: 589.68, OrchardEstablishment: 1200.00, CropManagement: 569.04 };
+
+    const mediumCaseYields = [0, 0, 20, 50, 100, 200, 250, 300, 400, 500];
+    const worstCaseYields = mediumCaseYields.map(val => Math.round(val * 0.7));
+    const bestCaseYields = mediumCaseYields.map(val => Math.round(val * 1.5));
+
+    function calculateInitialInvestment(sizeAcre) {
+      let cost = Object.values(defaultOptions).reduce((a, b) => a + b, 0) * sizeAcre;
+      let yearlyOps = [cost];
+      let fertCost = 546.00;
+
+      for (let i = 1; i < 10; i++) {
+        fertCost *= 1.05;
+        yearlyOps.push(Math.round(fertCost, 2));
+      }
+
+      return { cost, yearlyOps };
+    }
+
+    function calculateRevenue(sizeAcre, years, scenario) {
+      const { cost, yearlyOps } = calculateInitialInvestment(sizeAcre);
+      const cases = { worst: worstCaseYields, medium: mediumCaseYields, best: bestCaseYields };
+
+      let totalRevenue = 0;
+      let totalYield = 0;
+      let yields = cases[scenario];
+
+      for (let year = 1; year <= years; year++) {
+        if (year <= 2) continue;
+
+        let yieldPerTree = yields[year - 1];
+        let trees = sizeAcre * 120 * 0.9;
+        let revenue = trees * yieldPerTree * 0.25;
+        let netRevenue = revenue - (yearlyOps[year - 1] || 0);
+
+        totalYield += yieldPerTree * 0.25;
+        totalRevenue += Math.max(netRevenue, 0);
+      }
+
+      let investor = 0.25 * totalRevenue;
+      let farmer = 0.65 * totalRevenue;
+      let company = 0.1 * totalRevenue;
+
+      return {
+        cost: cost.toFixed(2),
+        revenue: totalRevenue.toFixed(2),
+        investor: investor.toFixed(2),
+        farmer: farmer.toFixed(2),
+        company: company.toFixed(2),
+        yield: totalYield.toFixed(2)
+      };
+    }
+
+    function renderResults() {
+      let sizeAcre = parseFloat(document.getElementById("sizeAcre").value);
+      let years = parseInt(document.getElementById("yearsSlider").value);
+      let scenario = document.getElementById("scenario").value;
+
+      const result = calculateRevenue(sizeAcre, years, scenario);
+
+      document.getElementById("results").innerHTML = `
+        <h4>Investment Summary</h4>
+        <p><strong>Initial Investment:</strong> $${result.cost}</p>
+        <p><strong>Grand Total Revenue:</strong> $${result.revenue}</p>
+        <p><strong>Investor Share:</strong> $${result.investor}</p>
+        <p><strong>Farmer Share:</strong> $${result.farmer}</p>
+        <p><strong>Company Share:</strong> $${result.company}</p>
+        <p><strong>Total Yield:</strong> ${result.yield} tons</p>
+      `;
+    }
+  </script>
+
+</body>
+</html>
