@@ -10,8 +10,6 @@ function avocado_calculator_shortcode() {
     ob_start();
     ?>
     <div class="container">
-        
-
         <div class="form-section">
             <h4>Investment Input</h4>
 
@@ -22,6 +20,22 @@ function avocado_calculator_shortcode() {
                 <label><input type="radio" name="scenario" value="best"> Optimistic</label>
             </div>
 
+            <label for="years">Investment Duration (years): <span id="yearsValue">10</span></label>
+            <input type="range" id="years" min="10" max="10" value="10" disabled>
+
+            <div class="row">
+                <div class="summary-item">
+                    <p><strong>Mature Tree Yield (fruits per tree):</strong> <span id="scenario-yield">--</span></p>
+                </div>
+                <div class="summary-item">
+                    <p><strong>Price per Fruit:</strong> $<span id="scenario-price">0.25</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-section">
+            <h4>Investment Summary</h4>
+
             <label for="treesInvested">Trees Invested: <span id="treesInvestedValue">0</span></label>
             <input type="range" id="treesInvested" min="0" max="1000" value="0">
             <p><strong>Money Invested:</strong> $<span id="moneyInvested">0</span></p>
@@ -30,31 +44,17 @@ function avocado_calculator_shortcode() {
             <input type="range" id="farmSize" min="0" max="100" value="0">
             <p><strong>Number of Trees:</strong> <span id="treesPerFarmSize">0</span></p>
 
-            <label for="years">Investment Duration (years): <span id="yearsValue">10</span></label>
-            <input type="range" id="years" min="10" max="10" value="10" disabled>
-        </div>
-        <div class="summary-section">
-            <h4>Investment Summary</h4>
             <div class="summary">
-                <div class="row">
-                    <div class="summary-item">
-                        <p><strong>Mature Tree Yield (fruits per tree):</strong> <span id="scenario-yield">--</span></p>
-                    </div>
-                    <div class="summary-item">
-                        <p><strong>Price per Fruit:$</strong> <span id="scenario-price">0.25</span></p>
-                    </div>
-                </div>
-                <p><strong>Money Invested:$</strong> <span id="OutputMoneyInvested">0</span></p>
-                <p><strong>Orchard Establishment Cost:$</strong> <span id="investment">--</span></p>
-                <p><strong>Estimated Revenue:$</strong> <span id="revenue">--</span></p>
-                <p><strong>Estimated Profit:$</strong> <span id="profit">--</span></p>
-                <p><strong>Return/Year:$</strong> <span id="returnPerYear">--</span></p>
+                <p><strong>Money Invested:</strong> $<span id="OutputMoneyInvested">0</span></p>
+                <p><strong>Orchard Establishment Cost:</strong> $<span id="investment">--</span></p>
+                <p><strong>Estimated Revenue:</strong> $<span id="revenue">--</span></p>
+                <p><strong>Estimated Profit:</strong> $<span id="profit">--</span></p>
+                <p><strong>Return/Year:</strong> $<span id="returnPerYear">--</span></p>
                 <p><strong>Carbon Sequestered:</strong> (tonnes) <span id="carbon-sequestered">--</span></p>
             </div>
             <button class="toggle-chart" onclick="toggleChart()">Toggle Revenue Chart</button>
         </div>
     </div>
-    
 
     <div id="chart-container">
         <canvas id="revenueChart"></canvas>
@@ -117,7 +117,17 @@ function avocado_calculator_shortcode() {
             font-size: 0.95rem;
             margin-bottom: 1rem;
             display: grid;
+            grid-template-columns: 1fr 1fr; /* Create two equal-width columns */
+            gap: 1rem; /* Add spacing between items */
             
+        }
+        .summary p {
+            margin: 0;
+            padding: 0.5rem;
+            background: #ffffff; /* Add a white background for contrast */
+            border-radius: 8px; /* Add rounded edges */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add a subtle shadow for separation */
+            border: 1px solid #ccc; /* Add a border to separate items */
         }
         .summary span {
             color: #2c0246; /* Apply the distinct color to digits */
@@ -127,13 +137,18 @@ function avocado_calculator_shortcode() {
             display: flex;
             justify-content: space-between; /* Space out the two items */
             gap: 1rem; /* Add spacing between the two items */
+            margin-top: 1rem;
             margin-bottom: 1rem; /* Add spacing below the row */
             margin-left: 0.5rem;
             margin-right:0.5rem;
         }
+        .row span {
+            color: #2c0246; /* Apply the distinct color to digits */
+            font-weight: bold; /* Make the digits stand out */
+        }
         .summary-item {
             flex: 1; /* Allow items to take equal space */
-            background: #ffffff; /* Add a white background for contrast */
+            background: #f1f8e9; /* Add a white background for contrast */
             border-radius: 8px; /* Add rounded edges */
             padding: 0.5rem 1rem; /* Add padding inside the items */
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add a subtle shadow for separation */
